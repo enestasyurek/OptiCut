@@ -2,12 +2,13 @@ import { useState, useRef } from 'react';
 import { 
   DocumentArrowUpIcon,
   DocumentTextIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 export function FileUpload({ onFileUpload, isLoading }) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleDragOver = (e) => {
@@ -27,22 +28,31 @@ export function FileUpload({ onFileUpload, isLoading }) {
     e.stopPropagation();
     setIsDragOver(false);
     
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === 'application/pdf') {
-      handleFile(droppedFile);
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(
+      file => file.type === 'application/pdf'
+    );
+    if (droppedFiles.length > 0) {
+      handleFiles(droppedFiles);
     }
   };
 
   const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      handleFile(selectedFile);
+    const selectedFiles = Array.from(e.target.files);
+    if (selectedFiles.length > 0) {
+      handleFiles(selectedFiles);
     }
   };
 
-  const handleFile = (file) => {
-    setFile(file);
-    onFileUpload(file);
+  const handleFiles = (newFiles) => {
+    const updatedFiles = [...files, ...newFiles];
+    setFiles(updatedFiles);
+    onFileUpload(updatedFiles);
+  };
+
+  const removeFile = (index) => {
+    const updatedFiles = files.filter((_, i) => i !== index);
+    setFiles(updatedFiles);
+    onFileUpload(updatedFiles);
   };
 
   const handleClick = () => {
@@ -82,6 +92,7 @@ export function FileUpload({ onFileUpload, isLoading }) {
             onChange={handleFileSelect}
             className="hidden"
             disabled={isLoading}
+            multiple
           />
 
           {isLoading ? (
@@ -94,19 +105,19 @@ export function FileUpload({ onFileUpload, isLoading }) {
                 <span>• Veriler işleniyor</span>
               </div>
             </div>
-          ) : file ? (
+          ) : files.length > 0 ? (
             <div className="flex flex-col items-center gap-md">
               <div className="w-16 h-16 rounded-full bg-[rgba(0,204,136,0.1)] flex items-center justify-center">
                 <CheckCircleIcon className="icon-lg text-success" />
               </div>
-              <div>
-                <p className="font-medium text-primary">{file.name}</p>
+              <div className="text-center">
+                <p className="font-medium text-primary">{files.length} dosya yüklendi</p>
                 <p className="text-sm text-tertiary">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                  Toplam: {(files.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
               <p className="text-sm text-secondary">
-                Dosya başarıyla yüklendi
+                Daha fazla dosya ekleyebilirsiniz
               </p>
             </div>
           ) : (
@@ -140,28 +151,63 @@ export function FileUpload({ onFileUpload, isLoading }) {
           )}
         </div>
 
-        {/* Example Files */}
-        <div className="mt-xl">
-          <h3 className="text-sm font-medium text-secondary mb-md">
-            Örnek Dosyalar
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
-            <button className="surface rounded-md p-md flex items-center gap-sm hover:border-[rgba(0,0,0,0.1)] text-left">
-              <DocumentTextIcon className="icon-md text-tertiary" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Sipariş Listesi</p>
-                <p className="text-xs text-tertiary">Örnek PDF</p>
-              </div>
-            </button>
-            <button className="surface rounded-md p-md flex items-center gap-sm hover:border-[rgba(0,0,0,0.1)] text-left">
-              <DocumentTextIcon className="icon-md text-tertiary" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Kesim Planı</p>
-                <p className="text-xs text-tertiary">Örnek PDF</p>
-              </div>
-            </button>
+        {/* Uploaded Files List */}
+        {files.length > 0 && (
+          <div className="mt-xl">
+            <h3 className="text-sm font-medium text-secondary mb-md">
+              Yüklenen Dosyalar ({files.length})
+            </h3>
+            <div className="space-y-sm">
+              {files.map((file, index) => (
+                <div key={index} className="surface rounded-md p-md flex items-center gap-sm">
+                  <DocumentTextIcon className="icon-md text-tertiary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-tertiary">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                  {!isLoading && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(index);
+                      }}
+                      className="p-xs rounded hover:bg-[var(--color-border)] transition-colors"
+                    >
+                      <XMarkIcon className="icon-sm text-tertiary" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Example Files */}
+        {files.length === 0 && (
+          <div className="mt-xl">
+            <h3 className="text-sm font-medium text-secondary mb-md">
+              Örnek Dosyalar
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
+              <button className="surface rounded-md p-md flex items-center gap-sm hover:border-[rgba(0,0,0,0.1)] text-left">
+                <DocumentTextIcon className="icon-md text-tertiary" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Sipariş Listesi</p>
+                  <p className="text-xs text-tertiary">Örnek PDF</p>
+                </div>
+              </button>
+              <button className="surface rounded-md p-md flex items-center gap-sm hover:border-[rgba(0,0,0,0.1)] text-left">
+                <DocumentTextIcon className="icon-md text-tertiary" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Kesim Planı</p>
+                  <p className="text-xs text-tertiary">Örnek PDF</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

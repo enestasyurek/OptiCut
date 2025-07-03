@@ -25,15 +25,41 @@ function App() {
     }
   }, [darkMode]);
 
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (files) => {
+    if (files.length === 0) {
+      setPieces([]);
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      const extractedPieces = await parsePdfFile(file);
-      setPieces(extractedPieces);
-      setCurrentStep('pieces');
+      const allPieces = [];
+      let pieceIdCounter = 1;
+      
+      for (const file of files) {
+        try {
+          const extractedPieces = await parsePdfFile(file);
+          // Add unique IDs and source file info to pieces
+          const piecesWithFileInfo = extractedPieces.map(piece => ({
+            ...piece,
+            id: pieceIdCounter++,
+            sourceFile: file.name
+          }));
+          allPieces.push(...piecesWithFileInfo);
+        } catch (error) {
+          console.error(`Error parsing ${file.name}:`, error);
+        }
+      }
+      
+      if (allPieces.length > 0) {
+        setPieces(allPieces);
+        setCurrentStep('pieces');
+      } else {
+        alert('Yüklenen PDF dosyalarından parça bilgisi çıkarılamadı. Lütfen geçerli sipariş listesi PDF\'leri yüklediğinizden emin olun.');
+      }
     } catch (error) {
-      console.error('Error parsing PDF:', error);
-      alert('PDF dosyası işlenirken bir hata oluştu. Lütfen geçerli bir sipariş listesi PDF\'i yüklediğinizden emin olun.');
+      console.error('Error parsing PDFs:', error);
+      alert('PDF dosyaları işlenirken bir hata oluştu.');
     } finally {
       setIsLoading(false);
     }

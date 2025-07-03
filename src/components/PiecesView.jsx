@@ -116,6 +116,7 @@ export function PiecesView({ pieces, onOptimize, isOptimizing }) {
                 <th className="text-left py-3 px-4 text-sm font-medium text-secondary">Boyut (mm)</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-secondary">Adet</th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-secondary">Alan (m²)</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-secondary">Kaynak</th>
               </tr>
             </thead>
             <tbody>
@@ -155,6 +156,9 @@ export function PiecesView({ pieces, onOptimize, isOptimizing }) {
                   <td className="py-3 px-4 text-sm text-right text-secondary">
                     {((piece.width * piece.height * piece.quantity) / 1000000).toFixed(3)}
                   </td>
+                  <td className="py-3 px-4 text-sm text-secondary truncate max-w-[150px]" title={piece.sourceFile}>
+                    {piece.sourceFile || 'PDF'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -169,6 +173,7 @@ export function PiecesView({ pieces, onOptimize, isOptimizing }) {
                 <td className="py-3 px-4 text-sm text-right font-bold">
                   {(totalArea / 1000000).toFixed(2)}
                 </td>
+                <td></td>
               </tr>
             </tfoot>
           </table>
